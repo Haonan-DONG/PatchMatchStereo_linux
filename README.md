@@ -1,1 +1,2 @@
-# PatchMatchStereo_linux
+PatchMatch Stereo - linux version
+code from Li Yingsong's github.
