@@ -1,8 +1,8 @@
 /* -*-c++-*- PatchMatchStereo - Copyright (C) 2020.
-* Author	: Yingsong Li(Ethan Li) <ethan.li.whu@gmail.com>
-*			  https://github.com/ethan-li-coding
-* Describe	: implement of patch match stereo class
-*/
+ * Author	: Yingsong Li(Ethan Li) <ethan.li.whu@gmail.com>
+ *			  https://github.com/ethan-li-coding
+ * Describe	: implement of patch match stereo class
+ */
 
 #include "stdafx.h"
 #include <iostream>
@@ -96,16 +96,16 @@ bool PatchMatchStereo::Match(const uint8 *img_left, const uint8 *img_right, floa
 
 	std::cout << "Start to compute gray" << std::endl;
 	ComputeGray();
-	
+
 	std::cout << "Start to compute the gradient" << std::endl;
 	ComputeGradient();
-	
+
 	std::cout << "Start to propagation." << std::endl;
 	Propagation();
-	
+
 	std::cout << "Start to plane to disparity." << std::endl;
 	PlaneToDisparity();
-	
+
 	if (option_.is_check_lr)
 	{
 		// һ���Լ��
@@ -180,7 +180,7 @@ void PatchMatchStereo::RandomInitialization() const
 	// �����������
 	// Generate random number.
 	std::random_device rd;
-	//std::mt19937 gen(rd());
+	// std::mt19937 gen(rd());
 	std::mt19937 gen;
 	gen.seed(rd());
 	// we dismiss the const for the random distribution.

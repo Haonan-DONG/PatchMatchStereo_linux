@@ -9,38 +9,48 @@
 #include "pms_types.h"
 #include <algorithm>
 
-#define COST_PUNISH 120.0f  // NOLINT(cppcoreguidelines-macro-usage)
+#define COST_PUNISH 120.0f // NOLINT(cppcoreguidelines-macro-usage)
 
 #define USE_FAST_EXP
-/* ¿ìËÙexp*/
-inline double fast_exp(double x) {
+/* ï¿½ï¿½ï¿½ï¿½exp*/
+inline double fast_exp(double x)
+{
 	x = 1.0 + x / 1024;
-	x *= x; x *= x; x *= x; x *= x;
-	x *= x; x *= x; x *= x; x *= x;
-	x *= x; x *= x;
+	x *= x;
+	x *= x;
+	x *= x;
+	x *= x;
+	x *= x;
+	x *= x;
+	x *= x;
+	x *= x;
+	x *= x;
+	x *= x;
 	return x;
 }
 
 /**
- * \brief ´ú¼Û¼ÆËãÆ÷»ùÀà
+ * \brief ï¿½ï¿½ï¿½Û¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
-class CostComputer {
+class CostComputer
+{
 public:
-	/** \brief ´ú¼Û¼ÆËãÆ÷Ä¬ÈÏ¹¹Ôì */
-	CostComputer(): img_left_(nullptr), img_right_(nullptr), width_(0), height_(0), patch_size_(0), min_disp_(0),
-	                max_disp_(0) {}
+	/** \brief ï¿½ï¿½ï¿½Û¼ï¿½ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½Ï¹ï¿½ï¿½ï¿½ */
+	CostComputer() : img_left_(nullptr), img_right_(nullptr), width_(0), height_(0), patch_size_(0), min_disp_(0),
+					 max_disp_(0) {}
 
 	/**
-	 * \brief ´ú¼Û¼ÆËãÆ÷³õÊ¼»¯
-	 * \param img_left		×óÓ°ÏñÊý¾Ý 
-	 * \param img_right		ÓÒÓ°ÏñÊý¾Ý
-	 * \param width			Ó°Ïñ¿í
-	 * \param height		Ó°Ïñ¸ß
-	 * \param patch_size	¾Ö²¿Patch´óÐ¡
-	 * \param min_disp		×îÐ¡ÊÓ²î
-	 * \param max_disp		×î´óÊÓ²î
+	 * \brief ï¿½ï¿½ï¿½Û¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
+	 * \param img_left		ï¿½ï¿½Ó°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 
+	 * \param img_right		ï¿½ï¿½Ó°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	 * \param width			Ó°ï¿½ï¿½ï¿½
+	 * \param height		Ó°ï¿½ï¿½ï¿½
+	 * \param patch_size	ï¿½Ö²ï¿½Patchï¿½ï¿½Ð¡
+	 * \param min_disp		ï¿½ï¿½Ð¡ï¿½Ó²ï¿½
+	 * \param max_disp		ï¿½ï¿½ï¿½ï¿½Ó²ï¿½
 	 */
-	CostComputer(const uint8* img_left, const uint8* img_right, const sint32& width,const sint32& height,const sint32& patch_size,const sint32& min_disp, const sint32& max_disp){
+	CostComputer(const uint8 *img_left, const uint8 *img_right, const sint32 &width, const sint32 &height, const sint32 &patch_size, const sint32 &min_disp, const sint32 &max_disp)
+	{
 		img_left_ = img_left;
 		img_right_ = img_right;
 		width_ = width;
@@ -50,68 +60,66 @@ public:
 		max_disp_ = max_disp;
 	}
 
-	/** \brief ´ú¼Û¼ÆËãÆ÷Îö¹¹ */
+	/** \brief ï¿½ï¿½ï¿½Û¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 	virtual ~CostComputer() = default;
 
 public:
-
 	/**
-	 * \brief ¼ÆËã×óÓ°ÏñpµãÊÓ²îÎªdÊ±µÄ´ú¼ÛÖµ
-	 * \param i		pµã×Ý×ø±ê
-	 * \param j		pµãºá×ø±ê
-	 * \param d		ÊÓ²îÖµ
-	 * \return ´ú¼ÛÖµ
+	 * \brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó°ï¿½ï¿½pï¿½ï¿½ï¿½Ó²ï¿½ÎªdÊ±ï¿½Ä´ï¿½ï¿½ï¿½Öµ
+	 * \param i		pï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	 * \param j		pï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	 * \param d		ï¿½Ó²ï¿½Öµ
+	 * \return ï¿½ï¿½ï¿½ï¿½Öµ
 	 */
-	virtual float32 Compute(const sint32& i, const sint32& j, const float32& d) = 0;
+	virtual float32 Compute(const sint32 &i, const sint32 &j, const float32 &d) = 0;
 
 public:
-	/** \brief ×óÓ°ÏñÊý¾Ý */
-	const uint8* img_left_;
-	/** \brief ÓÒÓ°ÏñÊý¾Ý */
-	const uint8* img_right_;
+	/** \brief ï¿½ï¿½Ó°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
+	const uint8 *img_left_;
+	/** \brief ï¿½ï¿½Ó°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
+	const uint8 *img_right_;
 
-	/** \brief Ó°Ïñ¿í */
+	/** \brief Ó°ï¿½ï¿½ï¿½ */
 	sint32 width_;
-	/** \brief Ó°Ïñ¸ß */
+	/** \brief Ó°ï¿½ï¿½ï¿½ */
 	sint32 height_;
-	/** \brief ¾Ö²¿´°¿ÚPatch´óÐ¡ */
+	/** \brief ï¿½Ö²ï¿½ï¿½ï¿½ï¿½ï¿½Patchï¿½ï¿½Ð¡ */
 	sint32 patch_size_;
 
-	/** \brief ×îÐ¡×î´óÊÓ²î */
+	/** \brief ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½Ó²ï¿½ */
 	sint32 min_disp_;
 	sint32 max_disp_;
 };
 
-
 /**
- * \brief ´ú¼Û¼ÆËãÆ÷£ºPatchMatchSteroÔ­ÎÄ´ú¼Û¼ÆËãÆ÷
+ * \brief ï¿½ï¿½ï¿½Û¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½PatchMatchSteroÔ­ï¿½Ä´ï¿½ï¿½Û¼ï¿½ï¿½ï¿½ï¿½ï¿½
  */
-class CostComputerPMS : public CostComputer {
+class CostComputerPMS : public CostComputer
+{
 public:
-
-	/** \brief PMS´ú¼Û¼ÆËãÆ÷Ä¬ÈÏ¹¹Ôì */
-	CostComputerPMS(): grad_left_(nullptr), grad_right_(nullptr), gamma_(0), alpha_(0), tau_col_(0), tau_grad_(0) {} ;
+	/** \brief PMSï¿½ï¿½ï¿½Û¼ï¿½ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½Ï¹ï¿½ï¿½ï¿½ */
+	CostComputerPMS() : grad_left_(nullptr), grad_right_(nullptr), gamma_(0), alpha_(0), tau_col_(0), tau_grad_(0){};
 
 	/**
-	 * \brief PMS´ú¼Û¼ÆËãÆ÷´ø²Î¹¹Ôì
-	 * \param img_left		×óÓ°ÏñÊý¾Ý
-	 * \param img_right		ÓÒÓ°ÏñÊý¾Ý
-	 * \param grad_left		×óÌÝ¶ÈÊý¾Ý
-	 * \param grad_right	ÓÒÌÝ¶ÈÊý¾Ý
-	 * \param width			Ó°Ïñ¿í
-	 * \param height		Ó°Ïñ¸ß
-	 * \param patch_size	¾Ö²¿Patch´óÐ¡
-	 * \param min_disp		×îÐ¡ÊÓ²î
-	 * \param max_disp		×î´óÊÓ²î
-	 * \param gamma			²ÎÊýgammaÖµ
-	 * \param alpha			²ÎÊýalphaÖµ
-	 * \param t_col			²ÎÊýtau_colÖµ
-	 * \param t_grad		²ÎÊýtau_gradÖµ
+	 * \brief PMSï¿½ï¿½ï¿½Û¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î¹ï¿½ï¿½ï¿½
+	 * \param img_left		ï¿½ï¿½Ó°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	 * \param img_right		ï¿½ï¿½Ó°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	 * \param grad_left		ï¿½ï¿½ï¿½Ý¶ï¿½ï¿½ï¿½ï¿½ï¿½
+	 * \param grad_right	ï¿½ï¿½ï¿½Ý¶ï¿½ï¿½ï¿½ï¿½ï¿½
+	 * \param width			Ó°ï¿½ï¿½ï¿½
+	 * \param height		Ó°ï¿½ï¿½ï¿½
+	 * \param patch_size	ï¿½Ö²ï¿½Patchï¿½ï¿½Ð¡
+	 * \param min_disp		ï¿½ï¿½Ð¡ï¿½Ó²ï¿½
+	 * \param max_disp		ï¿½ï¿½ï¿½ï¿½Ó²ï¿½
+	 * \param gamma			ï¿½ï¿½ï¿½ï¿½gammaÖµ
+	 * \param alpha			ï¿½ï¿½ï¿½ï¿½alphaÖµ
+	 * \param t_col			ï¿½ï¿½ï¿½ï¿½tau_colÖµ
+	 * \param t_grad		ï¿½ï¿½ï¿½ï¿½tau_gradÖµ
 	 */
-	CostComputerPMS(const uint8* img_left, const uint8* img_right, const PGradient* grad_left, const PGradient* grad_right, const sint32& width, const sint32& height, const sint32& patch_size,
-		const sint32& min_disp, const sint32& max_disp,
-		const float32& gamma, const float32& alpha, const float32& t_col, const float32 t_grad) :
-		CostComputer(img_left, img_right, width, height, patch_size, min_disp, max_disp) {
+	CostComputerPMS(const uint8 *img_left, const uint8 *img_right, const PGradient *grad_left, const PGradient *grad_right, const sint32 &width, const sint32 &height, const sint32 &patch_size,
+					const sint32 &min_disp, const sint32 &max_disp,
+					const float32 &gamma, const float32 &alpha, const float32 &t_col, const float32 t_grad) : CostComputer(img_left, img_right, width, height, patch_size, min_disp, max_disp)
+	{
 		grad_left_ = grad_left;
 		grad_right_ = grad_right;
 		gamma_ = gamma;
@@ -121,88 +129,93 @@ public:
 	}
 
 	/**
-	 * \brief ¼ÆËã×óÓ°ÏñpµãÊÓ²îÎªdÊ±µÄ´ú¼ÛÖµ
-	 * \param x		pµãx×ø±ê
-	 * \param y		pµãy×ø±ê
-	 * \param d		ÊÓ²îÖµ
-	 * \return ´ú¼ÛÖµ
+	 * \brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó°ï¿½ï¿½pï¿½ï¿½ï¿½Ó²ï¿½ÎªdÊ±ï¿½Ä´ï¿½ï¿½ï¿½Öµ
+	 * \param x		pï¿½ï¿½xï¿½ï¿½ï¿½ï¿½
+	 * \param y		pï¿½ï¿½yï¿½ï¿½ï¿½ï¿½
+	 * \param d		ï¿½Ó²ï¿½Öµ
+	 * \return ï¿½ï¿½ï¿½ï¿½Öµ
 	 */
-	inline float32 Compute(const sint32& x, const sint32& y, const float32& d) override
+	inline float32 Compute(const sint32 &x, const sint32 &y, const float32 &d) override
 	{
 		const float32 xr = x - d;
-		if (xr < 0.0f || xr >= static_cast<float32>(width_)) {
+		if (xr < 0.0f || xr >= static_cast<float32>(width_))
+		{
 			return (1 - alpha_) * tau_col_ + alpha_ * tau_grad_;
 		}
-		// ÑÕÉ«¿Õ¼ä¾àÀë
+		// ï¿½ï¿½É«ï¿½Õ¼ï¿½ï¿½ï¿½ï¿½
 		const auto col_p = GetColor(img_left_, x, y);
 		const auto col_q = GetColor(img_right_, xr, y);
 		const auto dc = std::min(abs(col_p.b - col_q.x) + abs(col_p.g - col_q.y) + abs(col_p.r - col_q.z), tau_col_);
 
-		// ÌÝ¶È¿Õ¼ä¾àÀë
+		// ï¿½Ý¶È¿Õ¼ï¿½ï¿½ï¿½ï¿½
 		const auto grad_p = GetGradient(grad_left_, x, y);
-		const auto grad_q = GetGradient(grad_right_, xr, y);
-		const auto dg = std::min(abs(grad_p.x - grad_q.x)+ abs(grad_p.y - grad_q.y), tau_grad_);
-
-		// ´ú¼ÛÖµ
-		return (1 - alpha_) * dc + alpha_ * dg;
-	}
-
-	/**
-	 * \brief ¼ÆËã×óÓ°ÏñpµãÊÓ²îÎªdÊ±µÄ´ú¼ÛÖµ
-	 * \param col_p		pµãÑÕÉ«Öµ
-	 * \param grad_p	pµãÌÝ¶ÈÖµ
-	 * \param x			pµãx×ø±ê
-	 * \param y			pµãy×ø±ê
-	 * \param d			ÊÓ²îÖµ
-	 * \return ´ú¼ÛÖµ
-	 */
-	inline float32 Compute(const PColor& col_p,const PGradient& grad_p, const sint32& x, const sint32& y, const float32& d) const
-	{
-		const float32 xr = x - d;
-		if (xr < 0.0f || xr >= static_cast<float32>(width_)) {
-			return (1 - alpha_) * tau_col_ + alpha_ * tau_grad_;
-		}
-		// ÑÕÉ«¿Õ¼ä¾àÀë
-		const auto col_q = GetColor(img_right_, xr, y);
-		const auto dc = std::min(abs(col_p.b - col_q.x) + abs(col_p.g - col_q.y) + abs(col_p.r - col_q.z), tau_col_);
-
-		// ÌÝ¶È¿Õ¼ä¾àÀë
 		const auto grad_q = GetGradient(grad_right_, xr, y);
 		const auto dg = std::min(abs(grad_p.x - grad_q.x) + abs(grad_p.y - grad_q.y), tau_grad_);
 
-		// ´ú¼ÛÖµ
+		// ï¿½ï¿½ï¿½ï¿½Öµ
 		return (1 - alpha_) * dc + alpha_ * dg;
 	}
 
+	/**
+	 * \brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó°ï¿½ï¿½pï¿½ï¿½ï¿½Ó²ï¿½ÎªdÊ±ï¿½Ä´ï¿½ï¿½ï¿½Öµ
+	 * \param col_p		pï¿½ï¿½ï¿½ï¿½É«Öµ
+	 * \param grad_p	pï¿½ï¿½ï¿½Ý¶ï¿½Öµ
+	 * \param x			pï¿½ï¿½xï¿½ï¿½ï¿½ï¿½
+	 * \param y			pï¿½ï¿½yï¿½ï¿½ï¿½ï¿½
+	 * \param d			ï¿½Ó²ï¿½Öµ
+	 * \return ï¿½ï¿½ï¿½ï¿½Öµ
+	 */
+	inline float32 Compute(const PColor &col_p, const PGradient &grad_p, const sint32 &x, const sint32 &y, const float32 &d) const
+	{
+		const float32 xr = x - d;
+		if (xr < 0.0f || xr >= static_cast<float32>(width_))
+		{
+			return (1 - alpha_) * tau_col_ + alpha_ * tau_grad_;
+		}
+		// ï¿½ï¿½É«ï¿½Õ¼ï¿½ï¿½ï¿½ï¿½
+		const auto col_q = GetColor(img_right_, xr, y);
+		const auto dc = std::min(abs(col_p.b - col_q.x) + abs(col_p.g - col_q.y) + abs(col_p.r - col_q.z), tau_col_);
+
+		// ï¿½Ý¶È¿Õ¼ï¿½ï¿½ï¿½ï¿½
+		const auto grad_q = GetGradient(grad_right_, xr, y);
+		const auto dg = std::min(abs(grad_p.x - grad_q.x) + abs(grad_p.y - grad_q.y), tau_grad_);
+
+		// ï¿½ï¿½ï¿½ï¿½Öµ
+		return (1 - alpha_) * dc + alpha_ * dg;
+	}
 
 	/**
-	 * \brief ¼ÆËã×óÓ°ÏñpµãÊÓ²îÆ½ÃæÎªpÊ±µÄ¾ÛºÏ´ú¼ÛÖµ
-	 * \param x		pµãx×ø±ê
-	 * \param y 	pµãy×ø±ê
-	 * \param p		Æ½Ãæ²ÎÊý
-	 * \return ¾ÛºÏ´ú¼ÛÖµ
+	 * \brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó°ï¿½ï¿½pï¿½ï¿½ï¿½Ó²ï¿½Æ½ï¿½ï¿½ÎªpÊ±ï¿½Ä¾ÛºÏ´ï¿½ï¿½ï¿½Öµ
+	 * \param x		pï¿½ï¿½xï¿½ï¿½ï¿½ï¿½
+	 * \param y 	pï¿½ï¿½yï¿½ï¿½ï¿½ï¿½
+	 * \param p		Æ½ï¿½ï¿½ï¿½ï¿½ï¿½
+	 * \return ï¿½ÛºÏ´ï¿½ï¿½ï¿½Öµ
 	 */
-	inline float32 ComputeA(const sint32& x, const sint32& y, const DisparityPlane& p) const
+	inline float32 ComputeA(const sint32 &x, const sint32 &y, const DisparityPlane &p) const
 	{
 		const auto pat = patch_size_ / 2;
-		const auto& col_p = GetColor(img_left_, x, y);
+		const auto &col_p = GetColor(img_left_, x, y);
 		float32 cost = 0.0f;
-		for (sint32 r = -pat; r <= pat; r++) {
+		for (sint32 r = -pat; r <= pat; r++)
+		{
 			const sint32 yr = y + r;
-			for (sint32 c = -pat; c <= pat; c++) {
+			for (sint32 c = -pat; c <= pat; c++)
+			{
 				const sint32 xc = x + c;
-				if (yr < 0 || yr > height_ - 1 || xc < 0 || xc > width_ - 1) {
+				if (yr < 0 || yr > height_ - 1 || xc < 0 || xc > width_ - 1)
+				{
 					continue;
 				}
-				// ¼ÆËãÊÓ²îÖµ
-				const float32 d = p.to_disparity(xc,yr);
-				if (d < min_disp_ || d > max_disp_) {
+				// ï¿½ï¿½ï¿½ï¿½ï¿½Ó²ï¿½Öµ
+				const float32 d = p.to_disparity(xc, yr);
+				if (d < min_disp_ || d > max_disp_)
+				{
 					cost += COST_PUNISH;
 					continue;
 				}
 
-				// ¼ÆËãÈ¨Öµ
-				const auto& col_q = GetColor(img_left_, xc, yr);
+				// ï¿½ï¿½ï¿½ï¿½È¨Öµ
+				const auto &col_q = GetColor(img_left_, xc, yr);
 				const auto dc = abs(col_p.r - col_q.r) + abs(col_p.g - col_q.g) + abs(col_p.b - col_q.b);
 #ifdef USE_FAST_EXP
 				const auto w = fast_exp(double(-dc / gamma_));
@@ -210,7 +223,7 @@ public:
 				const auto w = exp(-dc / gamma_);
 #endif
 
-				// ¾ÛºÏ´ú¼Û
+				// ï¿½ÛºÏ´ï¿½ï¿½ï¿½
 				const auto grad_q = GetGradient(grad_left_, xc, yr);
 				cost += w * Compute(col_q, grad_q, xc, yr, d);
 			}
@@ -219,88 +232,89 @@ public:
 	}
 
 	/**
-	* \brief »ñÈ¡ÏñËØµãµÄÑÕÉ«Öµ
-	* \param img_data	ÑÕÉ«Êý×é,3Í¨µÀ
-	* \param x			ÏñËØx×ø±ê
-	* \param y			ÏñËØy×ø±ê
-	* \return ÏñËØ(x,y)µÄÑÕÉ«Öµ
+	* \brief ï¿½ï¿½È¡ï¿½ï¿½ï¿½Øµï¿½ï¿½ï¿½ï¿½É«Öµ
+	* \param img_data	ï¿½ï¿½É«ï¿½ï¿½ï¿½ï¿½,3Í¨ï¿½ï¿½
+	* \param x			ï¿½ï¿½ï¿½ï¿½xï¿½ï¿½ï¿½ï¿½
+	* \param y			ï¿½ï¿½ï¿½ï¿½yï¿½ï¿½ï¿½ï¿½
+	* \return ï¿½ï¿½ï¿½ï¿½(x,y)ï¿½ï¿½ï¿½ï¿½É«Öµ
 	*/
-	inline PColor GetColor(const uint8* img_data, const sint32& x, const sint32& y) const
+	inline PColor GetColor(const uint8 *img_data, const sint32 &x, const sint32 &y) const
 	{
-		auto* pixel = img_data + y * width_ * 3 + 3 * x;
-		return { pixel[0], pixel[1], pixel[2] };
+		auto *pixel = img_data + y * width_ * 3 + 3 * x;
+		return {pixel[0], pixel[1], pixel[2]};
 	}
 
 	/**
-	* \brief »ñÈ¡ÏñËØµãµÄÑÕÉ«Öµ
-	* \param img_data	ÑÕÉ«Êý×é
-	* \param x			ÏñËØx×ø±ê£¬ÊµÊý£¬ÏßÐÔÄÚ²åµÃµ½ÑÕÉ«Öµ
-	* \param y			ÏñËØy×ø±ê
-	* \return ÏñËØ(x,y)µÄÑÕÉ«Öµ
+	* \brief ï¿½ï¿½È¡ï¿½ï¿½ï¿½Øµï¿½ï¿½ï¿½ï¿½É«Öµ
+	* \param img_data	ï¿½ï¿½É«ï¿½ï¿½ï¿½ï¿½
+	* \param x			ï¿½ï¿½ï¿½ï¿½xï¿½ï¿½ï¿½ê£¬Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú²ï¿½Ãµï¿½ï¿½ï¿½É«Öµ
+	* \param y			ï¿½ï¿½ï¿½ï¿½yï¿½ï¿½ï¿½ï¿½
+	* \return ï¿½ï¿½ï¿½ï¿½(x,y)ï¿½ï¿½ï¿½ï¿½É«Öµ
 	*/
-	inline PVector3f GetColor(const uint8* img_data, const float32& x,const sint32& y) const
+	inline PVector3f GetColor(const uint8 *img_data, const float32 &x, const sint32 &y) const
 	{
 		float32 col[3];
 		const auto x1 = static_cast<sint32>(x);
 		const sint32 x2 = x1 + 1;
 		const float32 ofs = x - x1;
 
-		for (sint32 n = 0; n < 3; n++) {
-			const auto& g1 = img_data[y * width_ * 3 + 3 * x1 + n];
-			const auto& g2 = (x2 < width_) ? img_data[y * width_ * 3 + 3 * x2 + n] : g1;
+		for (sint32 n = 0; n < 3; n++)
+		{
+			const auto &g1 = img_data[y * width_ * 3 + 3 * x1 + n];
+			const auto &g2 = (x2 < width_) ? img_data[y * width_ * 3 + 3 * x2 + n] : g1;
 			col[n] = (1 - ofs) * g1 + ofs * g2;
 		}
 
-		return { col[0], col[1], col[2] };
+		return {col[0], col[1], col[2]};
 	}
 
 	/**
-	* \brief »ñÈ¡ÏñËØµãµÄÌÝ¶ÈÖµ
-	* \param grad_data	ÌÝ¶ÈÊý×é
-	* \param x			ÏñËØx×ø±ê
-	* \param y			ÏñËØy×ø±ê
-	* \return ÏñËØ(x,y)µÄÌÝ¶ÈÖµ
+	* \brief ï¿½ï¿½È¡ï¿½ï¿½ï¿½Øµï¿½ï¿½ï¿½Ý¶ï¿½Öµ
+	* \param grad_data	ï¿½Ý¶ï¿½ï¿½ï¿½ï¿½ï¿½
+	* \param x			ï¿½ï¿½ï¿½ï¿½xï¿½ï¿½ï¿½ï¿½
+	* \param y			ï¿½ï¿½ï¿½ï¿½yï¿½ï¿½ï¿½ï¿½
+	* \return ï¿½ï¿½ï¿½ï¿½(x,y)ï¿½ï¿½ï¿½Ý¶ï¿½Öµ
 	*/
-	inline PGradient GetGradient(const PGradient* grad_data, const sint32& x, const sint32& y) const
+	inline PGradient GetGradient(const PGradient *grad_data, const sint32 &x, const sint32 &y) const
 	{
 		return grad_data[y * width_ + x];
 	}
 
 	/**
-	* \brief »ñÈ¡ÏñËØµãµÄÌÝ¶ÈÖµ
-	* \param grad_data	ÌÝ¶ÈÊý×é
-	* \param x			ÏñËØx×ø±ê£¬ÊµÊý£¬ÏßÐÔÄÚ²åµÃµ½ÌÝ¶ÈÖµ
-	* \param y			ÏñËØy×ø±ê
-	* \return ÏñËØ(x,y)µÄÌÝ¶ÈÖµ
+	* \brief ï¿½ï¿½È¡ï¿½ï¿½ï¿½Øµï¿½ï¿½ï¿½Ý¶ï¿½Öµ
+	* \param grad_data	ï¿½Ý¶ï¿½ï¿½ï¿½ï¿½ï¿½
+	* \param x			ï¿½ï¿½ï¿½ï¿½xï¿½ï¿½ï¿½ê£¬Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú²ï¿½Ãµï¿½ï¿½Ý¶ï¿½Öµ
+	* \param y			ï¿½ï¿½ï¿½ï¿½yï¿½ï¿½ï¿½ï¿½
+	* \return ï¿½ï¿½ï¿½ï¿½(x,y)ï¿½ï¿½ï¿½Ý¶ï¿½Öµ
 	*/
-	inline PVector2f GetGradient(const PGradient* grad_data, const float32& x, const sint32& y) const
+	inline PVector2f GetGradient(const PGradient *grad_data, const float32 &x, const sint32 &y) const
 	{
 		const auto x1 = static_cast<sint32>(x);
 		const sint32 x2 = x1 + 1;
 		const float32 ofs = x - x1;
 
-		const auto& g1 = grad_data[y * width_ + x1];
-		const auto& g2 = (x2 < width_) ? grad_data[y * width_ + x2] : g1;
+		const auto &g1 = grad_data[y * width_ + x1];
+		const auto &g2 = (x2 < width_) ? grad_data[y * width_ + x2] : g1;
 
-		return { (1 - ofs) * g1.x + ofs * g2.x,(1 - ofs) * g1.y + ofs * g2.y };
+		return {(1 - ofs) * g1.x + ofs * g2.x, (1 - ofs) * g1.y + ofs * g2.y};
 	}
 
 private:
-	/** \brief ×óÓ°ÏñÌÝ¶ÈÊý¾Ý */
-	const PGradient* grad_left_;
-	/** \brief ÓÒÓ°ÏñÌÝ¶ÈÊý¾Ý */
-	const PGradient* grad_right_;
+	/** \brief ï¿½ï¿½Ó°ï¿½ï¿½ï¿½Ý¶ï¿½ï¿½ï¿½ï¿½ï¿½ */
+	const PGradient *grad_left_;
+	/** \brief ï¿½ï¿½Ó°ï¿½ï¿½ï¿½Ý¶ï¿½ï¿½ï¿½ï¿½ï¿½ */
+	const PGradient *grad_right_;
 
-	/** \brief ²ÎÊýgamma */
+	/** \brief ï¿½ï¿½ï¿½ï¿½gamma */
 	float gamma_;
-	/** \brief ²ÎÊýalpha */
+	/** \brief ï¿½ï¿½ï¿½ï¿½alpha */
 	float32 alpha_;
-	/** \brief ²ÎÊýtau_col */
+	/** \brief ï¿½ï¿½ï¿½ï¿½tau_col */
 	float32 tau_col_;
-	/** \brief ²ÎÊýtau_grad */
+	/** \brief ï¿½ï¿½ï¿½ï¿½tau_grad */
 	float32 tau_grad_;
 };
 
-// ¡ý¡ý¡ýÔÚ´ËÍ¨¹ýÅÉÉúÀàµÄ·½Ê½ÊµÏÖÄãÏëÊµÏÖµÄ´ú¼Û¼ÆËãÆ÷¡ý¡ý¡ý
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä·ï¿½Ê½Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ÖµÄ´ï¿½ï¿½Û¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 #endif
